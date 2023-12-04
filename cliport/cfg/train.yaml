@@ -18,7 +18,7 @@ train:
   # folders
   exp_folder: exps
   train_dir: ${root_dir}/${train.exp_folder}/${train.task}-${train.agent}-n${train.n_demos}-train
-  data_dir: ${root_dir}/data
+  data_dir: ${root_dir}/cliport/data
 
   # task configs
   task: packing-boxes-pairs-seen-colors

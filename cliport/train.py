@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+print(os.getcwd())
+
 import torch
 from cliport import agents
 from cliport.dataset import RavensDataset, RavensMultiTaskDataset

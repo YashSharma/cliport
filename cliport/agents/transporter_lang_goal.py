@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 from cliport.utils import utils
 from cliport.agents.transporter import TransporterAgent
@@ -10,10 +11,38 @@ from cliport.models.streams.two_stream_transport_lang_fusion import TwoStreamTra
 from cliport.models.streams.two_stream_attention_lang_fusion import TwoStreamAttentionLangFusionLat
 from cliport.models.streams.two_stream_transport_lang_fusion import TwoStreamTransportLangFusionLat
 
+def text_parser(text, llm_parsing=True, task='pick'):
+    '''Hard coded for training to improve latency.'''
+    
+    if text.split(" ")[0] == "done":
+        return ""
+    
+    if llm_parsing == "separating-piles":
+        pick_object = text.split("into")[0].split("the")[1].strip()
+    elif llm_parsing == "towers-of-hanoi":
+        pick_object = text.split("to the")[0].split("the")[1].strip()
+    elif llm_parsing == "align-rope":
+        pick_object = text.split("to")[0].split("the")[1].strip()
+    else:
+        pick_object = text.split("in the")[0].split("the")[1].strip()
+    
+    if llm_parsing == "separating-piles":
+        place_object = "push into" + text.split("into")[1]
+    elif llm_parsing == "towers-of-hanoi":
+        place_object = "move to the" + text.split("to the")[1]
+    elif llm_parsing == "align-rope":
+        place_object = "align the rope to" + text.split("to")[-1]
+    else:    
+        place_object = "put in the" + text.split("in the")[-1]
+        
+    if task == "pick":
+        return pick_object
+    else:
+        return place_object
 
 class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
-    def __init__(self, name, cfg, train_ds, test_ds):
-        super().__init__(name, cfg, train_ds, test_ds)
+    def __init__(self, name, cfg, train_ds, test_ds, llm_parsing):
+        super().__init__(name, cfg, train_ds, test_ds, llm_parsing)
 
     def _build_model(self):
         stream_one_fcn = 'plain_resnet'
@@ -39,7 +68,12 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
     def attn_forward(self, inp, softmax=True):
         inp_img = inp['inp_img']
         lang_goal = inp['lang_goal']
+        
+        # Text Parsing
+        if self.llm_parsing:
+            lang_goal = text_parser(lang_goal, self.llm_parsing, task='pick')
 
+#         print(lang_goal)
         out = self.attention.forward(inp_img, lang_goal, softmax=softmax)
         return out
 
@@ -56,7 +90,11 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
         inp_img = inp['inp_img']
         p0 = inp['p0']
         lang_goal = inp['lang_goal']
-
+        
+        # Text Parsing
+        if self.llm_parsing:
+            lang_goal = text_parser(lang_goal, self.llm_parsing, task='place')
+        
         out = self.transport.forward(inp_img, p0, lang_goal, softmax=softmax)
         return out
 
@@ -112,8 +150,8 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
 
 
 class TwoStreamClipFilmLingUNetLatTransporterAgent(TwoStreamClipLingUNetTransporterAgent):
-    def __init__(self, name, cfg, train_ds, test_ds):
-        super().__init__(name, cfg, train_ds, test_ds)
+    def __init__(self, name, cfg, train_ds, test_ds, llm_parsing):
+        super().__init__(name, cfg, train_ds, test_ds, llm_parsing)
 
     def _build_model(self):
         stream_one_fcn = 'plain_resnet_lat'
@@ -138,8 +176,8 @@ class TwoStreamClipFilmLingUNetLatTransporterAgent(TwoStreamClipLingUNetTranspor
 
 
 class TwoStreamClipLingUNetLatTransporterAgent(TwoStreamClipLingUNetTransporterAgent):
-    def __init__(self, name, cfg, train_ds, test_ds):
-        super().__init__(name, cfg, train_ds, test_ds)
+    def __init__(self, name, cfg, train_ds, test_ds, llm_parsing):
+        super().__init__(name, cfg, train_ds, test_ds, llm_parsing)
 
     def _build_model(self):
         stream_one_fcn = 'plain_resnet_lat'

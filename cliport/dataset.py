@@ -232,6 +232,9 @@ class RavensDataset(Dataset):
 
         if info and 'lang_goal' in info:
             sample['lang_goal'] = info['lang_goal']
+            if 'pick_goal' in info:
+                sample['pick_goal'] = info['pick_goal']
+                sample['place_goal'] = info['place_goal']                            
         else:
             sample['lang_goal'] = "task completed."
 

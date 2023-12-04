@@ -18,6 +18,7 @@ from typing import Union, List
 
 import torch
 from PIL import Image
+import torchvision
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from tqdm import tqdm
 
@@ -531,7 +532,7 @@ def available_models():
     return list(_MODELS.keys())
 
 
-def load_clip(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu", jit=True):
+def load_clip(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu", jit=False):
     if name not in _MODELS:
         raise RuntimeError(f"Model {name} not found; available models = {available_models()}")
 
@@ -548,7 +549,7 @@ def load_clip(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda
     ])
 
     if not jit:
-        model = build_model(model.state_dict()).to(device)
+        #model = build_model(model.state_dict()).to(device)
         if str(device) == "cpu":
             model.float()
         return model, transform
